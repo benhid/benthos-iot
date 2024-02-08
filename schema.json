@@ -1,0 +1,33 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Generated schema",
+  "type": "object",
+  "properties": {
+    "device_id": {
+      "type": "string"
+    },
+    "ws_id": {
+      "type": "string"
+    },
+    "ts": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "enum" : ["temperature", "humidity", "pressure"]
+    },
+    "change": {
+      "type": ["number","string","boolean","object","array", "null"]
+    },
+    "old": {
+      "type": ["number","string","boolean","object","array", "null"]
+    }
+  },
+  "required": [
+    "device_id",
+    "ws_id",
+    "ts",
+    "change",
+    "old"
+  ]
+}

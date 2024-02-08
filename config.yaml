@@ -1,0 +1,65 @@
+input:
+  label: ""
+  generate:
+    mapping: |
+      root = {
+        "device_id": uuid_v4(),
+        "ws_id": nanoid(),
+        "ts": now(),
+        "change": {
+          "temperature": { "celsius": random_int(), "fahrenheit": random_int() },
+          "humidity": random_int(),
+          "pressure": random_int()
+        },
+        "old": {
+          "temperature": { "celsius": random_int(), "fahrenheit": random_int() },
+          "humidity": random_int(),
+          "pressure": random_int()
+        }
+      }
+    interval: 1s
+    count: 0
+    batch_size: 1
+
+pipeline:
+  processors:
+    - mapping: |
+        let change_keys = this.change.keys()
+        root = $change_keys.map_each(value -> {
+          "device_id": this.device_id,
+          "ws_id": this.ws_id,
+          "ts": this.ts,
+          "type": value,
+          "change": this.change.get(value),
+          "old": this.old.get(value)
+        })
+    - unarchive:
+        format: json_array
+    - json_schema:
+        schema_path: file://./schema.json
+    - catch:
+      - log:
+          level: ERROR
+          message: "Schema validation failed due to: ${!error()}"
+      - mapping: 'root = deleted()' # Drop messages that fail
+    - log:
+        level: DEBUG
+        message: "Valid message: ${!json()}"
+
+output:
+  label: ""
+  sql_raw:
+    driver: "clickhouse"
+    dsn: clickhouse://localhost:19000/foodatabase?dial_timeout=200ms&max_execution_time=60
+    query: INSERT INTO foodatabase.${! this.type } (device_id, ws_id, ts, change, old) VALUES (?, ?, ?, ?, ?);
+    unsafe_dynamic_query: true
+    args_mapping: |
+      root = [
+        this.device_id,
+        this.ws_id,
+        this.ts,
+        this.change,
+        this.old,
+      ]
+    init_files:
+    - ./init/*.sql

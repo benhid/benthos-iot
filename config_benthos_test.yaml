@@ -1,0 +1,39 @@
+tests:
+  - name: messages are processed successfully
+    target_processors: '/pipeline/processors'
+    input_batch:
+      - content: |
+          {
+            "device_id": "c0c92cc1-dcd3-4ad0-bd81-73a35476372b",
+            "ws_id": "Q96rNV_hRroW3Lb1gZapK",
+            "ts": "2024-02-08T13:16:44.994964891+01:00",
+            "change": {
+              "temperature": { "celsius": 1, "fahrenheit": 1 },
+              "humidity": 1,
+              "pressure": 1
+            },
+            "old": {
+              "temperature": { "celsius": 2, "fahrenheit": 2 },
+              "humidity": 2,
+              "pressure": 2
+            }
+          }
+    output_batches:
+      - - json_equals: {"change":1,"device_id":"c0c92cc1-dcd3-4ad0-bd81-73a35476372b","old":2,"ts":"2024-02-08T13:16:44.994964891+01:00","type":"humidity","ws_id":"Q96rNV_hRroW3Lb1gZapK"}
+        - json_equals: {"change":1,"device_id":"c0c92cc1-dcd3-4ad0-bd81-73a35476372b","old":2,"ts":"2024-02-08T13:16:44.994964891+01:00","type":"pressure","ws_id":"Q96rNV_hRroW3Lb1gZapK"}
+        - json_equals: {"change":{"celsius":1,"fahrenheit":1},"device_id":"c0c92cc1-dcd3-4ad0-bd81-73a35476372b","old":{"celsius":2,"fahrenheit":2},"ts":"2024-02-08T13:16:44.994964891+01:00","type":"temperature","ws_id":"Q96rNV_hRroW3Lb1gZapK"}
+  - name: schema validation fails and message is dropped
+    target_processors: '/pipeline/processors'
+    input_batch:
+      - content: |
+          {
+            "device_id": "c0c92cc1-dcd3-4ad0-bd81-73a35476372b",
+            "ws_id": "Q96rNV_hRroW3Lb1gZapK",
+            "ts": "2024-02-08T13:16:44.994964891+01:00",
+            "change": {
+              "order": 1
+            },
+            "old": {
+              "order": 1
+            }
+          }
